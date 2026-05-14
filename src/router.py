@@ -11,6 +11,20 @@ import re
 MODEL_FAST      = "qwen2.5:14b"       # nhanh, chat hàng ngày
 MODEL_REASONING = "deepseek-r1:32b"   # chậm, suy luận sâu
 
+# num_ctx tối ưu cho từng model — cân bằng giữa context dài và VRAM
+# Công thức: VRAM model + KV Cache (ctx * ~0.1MB/token) <= 24GB
+MODEL_CTX: dict[str, int] = {
+    "qwen2.5:14b":    32_768,   # 9GB model  + ~3GB KV  = ~12GB ✅
+    "deepseek-r1:32b": 8_192,   # 19GB model + ~2GB KV  = ~21GB ✅
+    "llama3.2:3b":    16_384,   # 2GB model  + ~1.5GB KV = ~4GB ✅
+}
+DEFAULT_CTX = 8_192   # fallback cho model không có trong danh sách
+
+
+def get_ctx(model: str) -> int:
+    """Trả về num_ctx phù hợp cho model."""
+    return MODEL_CTX.get(model, DEFAULT_CTX)
+
 # Từ khóa gợi ý cần suy luận sâu
 _REASONING_KEYWORDS = [
     # Phân tích / lập luận

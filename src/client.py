@@ -7,7 +7,7 @@ Dùng model="qwen2.5:14b" hoặc "deepseek-r1:32b" để ép thủ công.
 
 import ollama
 from typing import Iterator
-from src.router import select_model, MODEL_FAST
+from src.router import select_model, MODEL_FAST, get_ctx
 
 DEFAULT_MODEL = "auto"
 
@@ -38,7 +38,11 @@ def chat(
         {"role": "system", "content": system},
         {"role": "user",   "content": prompt},
     ]
-    response = ollama.chat(model=resolved, messages=messages)
+    response = ollama.chat(
+        model=resolved,
+        messages=messages,
+        options={"num_ctx": get_ctx(resolved)},
+    )
     return response["message"]["content"]
 
 
@@ -54,7 +58,12 @@ def chat_stream(
         {"role": "system", "content": system},
         {"role": "user",   "content": prompt},
     ]
-    for chunk in ollama.chat(model=resolved, messages=messages, stream=True):
+    for chunk in ollama.chat(
+        model=resolved,
+        messages=messages,
+        stream=True,
+        options={"num_ctx": get_ctx(resolved)},
+    ):
         yield chunk["message"]["content"]
 
 
