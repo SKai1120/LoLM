@@ -27,8 +27,8 @@
 
 | Giai đoạn | Nội dung | Trạng thái |
 |-----------|----------|------------|
-| Phase 1 | Cài đặt môi trường (Ollama + Python) | 🔄 Đang làm |
-| Phase 2 | Chạy model đầu tiên & benchmark | ⏳ Chờ |
+| Phase 1 | Cài đặt môi trường (Ollama + Python) | ✅ Xong |
+| Phase 2 | Chạy model đầu tiên & benchmark | ✅ Xong |
 | Phase 3 | Xây Python wrapper / client | ⏳ Chờ |
 | Phase 4 | Tính năng nâng cao (streaming, multi-turn) | ⏳ Chờ |
 | Phase 5 | Ứng dụng thực tế (RAG / Chatbot) | ⏳ Chờ |
@@ -116,6 +116,53 @@ git push -u origin master
 ```
 
 **Kết quả:** Remote đã kết nối thành công → https://github.com/SKai1120/LoLM
+
+Commit và push devlog + .gitignore:
+```powershell
+cd H:\Project\LoLM
+git add devlog.md .gitignore
+git commit -m "Update devlog: GitHub setup + add .gitignore"
+git push
+```
+
+---
+
+### [2026-05-14] Q&A — Tái tạo môi trường trên máy khác
+
+**Q: Làm sao tạo lại `.venv` trên máy khác?**
+A: Clone repo về rồi chạy 3 lệnh:
+```powershell
+git clone https://github.com/SKai1120/LoLM.git
+cd LoLM
+python -m venv .venv
+.\.venv\Scripts\pip install -r requirements.txt
+```
+`.venv` không lên git (có trong `.gitignore`). `requirements.txt` chứa danh sách thư viện — máy mới tự cài lại từ đó.
+
+---
+
+### [2026-05-15] Phase 2 — Benchmark kết quả
+
+Chạy benchmark so sánh 2 model:
+```powershell
+cd H:\Project\LoLM
+.\.venv\Scripts\python scripts\benchmark.py
+```
+
+**Kết quả:**
+| Model | Tốc độ tb | Ghi chú |
+|-------|-----------|---------|
+| qwen2.5:14b | **65.6 t/s** | Ổn định, tiếng Việt khá |
+| deepseek-r1:32b | 6.5 t/s | Chậm do kiến trúc reasoning (sinh thinking tokens), test 1 timeout 120s |
+
+**Phân tích:**
+- `deepseek-r1` chậm vì là reasoning model — tự "nháp" trước khi trả lời, sinh nhiều tokens hơn
+- Cả 2 model bị lỗi trộn tiếng Trung khi không có system prompt → sẽ fix ở Phase 3
+- 19GB deepseek có thể bị tràn một phần sang RAM (VRAM overhead)
+
+**Quyết định:**
+- Model chính: `qwen2.5:14b` — nhanh gấp 10x, đủ chất lượng
+- `deepseek-r1:32b` — giữ lại cho bài toán cần suy luận sâu
 
 ---
 
