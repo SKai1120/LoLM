@@ -65,7 +65,6 @@ def _show_model_info(session: ChatSession) -> None:
         f"  max_turns   : [dim]{session.max_turns}[/dim]"
     )
 
-
 def _stream_reply(session: ChatSession, prompt: str) -> str:
     """Stream câu trả lời ra terminal, trả về tên model đã dùng."""
     # Xác định model trước để hiển thị
