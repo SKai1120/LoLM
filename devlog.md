@@ -166,5 +166,26 @@ cd H:\Project\LoLM
 
 ---
 
+### [2026-05-15] Phase 3 — Tóm tắt cuối ngày
+
+**Đã hoàn thành:**
+- Smart router `src/router.py` — tự chọn qwen/deepseek theo loại câu hỏi
+- `num_ctx` tối ưu per model — tránh context overflow, không lãng phí VRAM
+- `ChatSession` — multi-turn chat với 3 lớp bảo vệ:
+  - num_ctx đúng theo model
+  - Sliding window (max 20 turns)
+  - Summary memory (tóm tắt phần cũ trước khi bỏ)
+- Session persistent: `save()` / `load()` JSON — nhớ qua nhiều ngày
+- `src/chat.py` — interactive CLI với lệnh `/help /model /history /save /reset /exit`
+
+**Bỏ ngỏ — tiếp tục lần sau:**
+- [ ] Test `src/chat.py` interactive CLI
+- [ ] Phase 4: Spinner khi chờ token đầu tiên
+- [ ] Phase 4: Live panel — text render trong khung cố định
+- [ ] Phase 4: Strip `<think>` tag của deepseek-r1
+- [ ] Phase 5: RAG / Chatbot
+
+---
+
 <!-- Thêm entries mới vào đây theo format: -->
 <!-- ### [YYYY-MM-DD] Tiêu đề -->
