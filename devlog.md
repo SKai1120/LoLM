@@ -256,5 +256,13 @@ User → Agent.run() → ollama.chat(tools=...) → tool_calls?
 
 **File mới:** `src/agent.py`
 
+### [2026-05-18] Refactor — Merge chat.py vào tui.py
+
+`src/chat.py` đã bị xóa. `src/tui.py` là entry point duy nhất cho interactive chat.
+
+**Lý do:** `tui.py` là superset hoàn toàn của `chat.py` — mọi lệnh (`/help /model /history /save /reset /exit`), flag (`--session --model --max-turns --verbose`) đều đã có, cộng thêm RAG + Agent mà `chat.py` không có. Duy trì song song 2 file là redundant.
+
+**Chạy:** `python -m src.tui` (thay cho `python -m src.chat`)
+
 <!-- Thêm entries mới vào đây theo format: -->
 <!-- ### [YYYY-MM-DD] Tiêu đề -->
