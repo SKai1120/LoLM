@@ -11,6 +11,7 @@ Ví dụ dùng multi-turn:
 """
 
 import json
+import os
 import ollama
 from typing import Iterator
 from src.router import select_model, MODEL_FAST, get_ctx
@@ -305,7 +306,6 @@ def list_models() -> list[str]:
 
 # ── Demo ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    import os
     from rich.console import Console
     console = Console()
 

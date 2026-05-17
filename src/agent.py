@@ -135,9 +135,9 @@ def _execute(name: str, args: dict, kb: KnowledgeBase | None) -> str:
         if not p.exists():
             return f"File không tồn tại: {p}"
         text = p.read_text(encoding="utf-8", errors="ignore")
-    if len(text) > 10_000:
-        return text[:10_000] + "\n[TRUNCATED]"
-    return text
+        if len(text) > 10_000:
+            return text[:10_000] + "\n[TRUNCATED]"
+        return text
 
     if name == "list_dir":
         p = Path(args.get("path", "."))

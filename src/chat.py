@@ -5,7 +5,7 @@ Chạy:
     python -m src.chat
     python -m src.chat --session sessions/myproject.json
     python -m src.chat --model qwen2.5:14b
-    python -m src.chat --no-router    (tắt auto-select, dùng model chính)
+
 
 Lệnh trong chat:
     /help       — xem danh sách lệnh
@@ -41,8 +41,8 @@ SPINNERS["robot_asm"] = {
     ],
 }
 
-from src.client import ChatSession, DEFAULT_MODEL, DEFAULT_SYSTEM
-from src.router import MODEL_FAST, MODEL_REASONING, select_model
+from src.client import ChatSession
+from src.router import MODEL_REASONING, select_model
 
 _THINK_RE = re.compile(r"<think>.*?</think>\s*", re.DOTALL | re.IGNORECASE)
 
