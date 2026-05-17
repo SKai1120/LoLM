@@ -17,6 +17,9 @@ sessions/
 # RAG / ChromaDB (vector store — tái tạo được bằng re-index)
 data/
 
+# Claude Code internal
+.claude/
+
 # OS
 .DS_Store
 Thumbs.db
