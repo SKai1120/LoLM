@@ -10,6 +10,7 @@ Ví dụ dùng multi-turn:
     session.send("Bạn còn nhớ tên tôi không?")  # model nhớ "K"
 """
 
+import json
 import ollama
 from typing import Iterator
 from src.router import select_model, MODEL_FAST, get_ctx
@@ -160,7 +161,6 @@ class ChatSession:
         Ví dụ:
             session.save("sessions/project_a.json")
         """
-        import json, os
         os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
         data = {
             "model":      self.model,
@@ -185,7 +185,6 @@ class ChatSession:
             session = ChatSession.load("sessions/project_a.json")
             session.send("Tiếp tục từ hôm qua nhé...")
         """
-        import json
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
@@ -278,8 +277,6 @@ class ChatSession:
             from rich.console import Console
             Console().print(f"\n[dim yellow]⚙ Compressing {half} messages into summary...[/dim yellow]")
 
-        # Dùng model nhanh để tóm tắt (bất kể session đang dùng model gì)
-        from src.router import MODEL_FAST, get_ctx
         response = ollama.chat(
             model=MODEL_FAST,
             messages=[{"role": "user", "content": summary_prompt}],

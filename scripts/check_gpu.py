@@ -1,6 +1,7 @@
 """Kiểm tra Ollama server và GPU status."""
 
 import subprocess
+import sys
 import httpx
 import json
 
@@ -51,7 +52,7 @@ if __name__ == "__main__":
         print("[OK] Ollama server đang chạy tại localhost:11434")
     else:
         print("[ERROR] Ollama không chạy. Hãy khởi động Ollama trước.")
-        exit(1)
+        sys.exit(1)
 
     models = get_models()
     if models:

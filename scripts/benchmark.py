@@ -130,8 +130,10 @@ def run_benchmark():
 
     # ── Gợi ý model chính ────────────────────────────────────────────────────
     console.print("\n[bold]Gợi ý:[/bold]")
-    qwen_avg  = sum(r["tps"] for r in results["qwen2.5:14b"]  if r["ok"]) / len(TEST_PROMPTS)
-    deep_avg  = sum(r["tps"] for r in results["deepseek-r1:32b"] if r["ok"]) / len(TEST_PROMPTS)
+    qwen_ok  = [r["tps"] for r in results["qwen2.5:14b"]      if r["ok"]]
+    deep_ok  = [r["tps"] for r in results["deepseek-r1:32b"]  if r["ok"]]
+    qwen_avg = sum(qwen_ok) / len(qwen_ok) if qwen_ok else 0
+    deep_avg = sum(deep_ok) / len(deep_ok) if deep_ok else 0
 
     console.print(f"  • [yellow]qwen2.5:14b[/yellow]     → tốc độ trung bình [cyan]{qwen_avg:.1f} t/s[/cyan] | nhẹ hơn, tốt tiếng Việt")
     console.print(f"  • [green]deepseek-r1:32b[/green] → tốc độ trung bình [cyan]{deep_avg:.1f} t/s[/cyan] | mạnh hơn, lý luận tốt hơn")

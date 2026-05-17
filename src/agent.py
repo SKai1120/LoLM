@@ -12,16 +12,14 @@ Dùng:
 """
 
 import json
-import re
 import subprocess
-import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterator
 
 import ollama
 
-from src.router import select_model
+from src.router import select_model, get_ctx
 from src.rag import KnowledgeBase, _fetch_url
 
 MAX_TOOL_ROUNDS = 8
@@ -136,7 +134,10 @@ def _execute(name: str, args: dict, kb: KnowledgeBase | None) -> str:
         p = Path(args.get("path", ""))
         if not p.exists():
             return f"File không tồn tại: {p}"
-        return p.read_text(encoding="utf-8", errors="ignore")[:10_000]
+        text = p.read_text(encoding="utf-8", errors="ignore")
+    if len(text) > 10_000:
+        return text[:10_000] + "\n[TRUNCATED]"
+    return text
 
     if name == "list_dir":
         p = Path(args.get("path", "."))
@@ -149,7 +150,10 @@ def _execute(name: str, args: dict, kb: KnowledgeBase | None) -> str:
 
     if name == "fetch_url":
         try:
-            return _fetch_url(args["url"])[:8_000]
+            text = _fetch_url(args["url"])
+            if len(text) > 8_000:
+                return text[:8_000] + "\n[TRUNCATED]"
+            return text
         except Exception as e:
             return f"Lỗi fetch: {e}"
 
@@ -222,6 +226,7 @@ class Agent:
                 model=resolved,
                 messages=self._history,
                 tools=_TOOL_DEFS,
+                options={"num_ctx": get_ctx(resolved)},
             )
             msg = response["message"]
 

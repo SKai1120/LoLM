@@ -252,6 +252,10 @@ class LoLMApp(App):
             self.call_from_thread(self._stop_spinner)
 
         self.call_from_thread(self._finish_stream, label, final_text, [])
+
+        if self.session_file:
+            self.call_from_thread(self.session.save, self.session_file)
+
         self._busy = False
 
     @work(thread=True)
@@ -268,6 +272,7 @@ class LoLMApp(App):
         self.call_from_thread(self._start_spinner, label)
         accumulated    = []
         spinner_active = True
+        displayed_len  = 0  # số ký tự display đã hiện, tránh O(n²)
 
         for chunk in self.session.stream(prompt):
             if worker.is_cancelled:
@@ -284,8 +289,9 @@ class LoLMApp(App):
                 spinner_active = False
 
             display = _strip_think(full)
-            if display:
+            if len(display) > displayed_len:
                 self.call_from_thread(self._show_stream, label, display)
+                displayed_len = len(display)
 
         if spinner_active:
             self.call_from_thread(self._stop_spinner)
@@ -365,6 +371,8 @@ class LoLMApp(App):
 
     def action_reset(self) -> None:
         self.session.reset()
+        if self.agent:
+            self.agent.reset()
         self.query_one("#log", RichLog).write("[dim]✓ Đã xóa lịch sử.[/dim]")
 
     def action_quit(self) -> None:

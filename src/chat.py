@@ -16,13 +16,11 @@ Lệnh trong chat:
     /exit       — thoát (tự động lưu nếu có session file)
 """
 
-import sys
 import os
 import re
 import typer
 from rich.console import Console
 from rich.panel import Panel
-from rich.text import Text
 from rich.live import Live
 from rich.spinner import Spinner, SPINNERS
 from rich import box
@@ -57,9 +55,10 @@ console = Console()
 
 def _header(session: ChatSession, session_file: str | None) -> None:
     """In header khi khởi động."""
-    file_info = f"[dim]{session_file}[/dim]" if session_file else "[dim]không lưu[/dim]"
+    file_info    = f"[dim]{session_file}[/dim]" if session_file else "[dim]không lưu[/dim]"
+    model_label  = f"[yellow]{session.model}[/yellow]"
     console.print(Panel.fit(
-        f"[bold cyan]LoLM Chat[/bold cyan]  •  model [yellow]auto[/yellow]  •  file {file_info}\n"
+        f"[bold cyan]LoLM Chat[/bold cyan]  •  model {model_label}  •  file {file_info}\n"
         f"[dim]Gõ [bold]/help[/bold] để xem lệnh  •  Ctrl+C hoặc [bold]/exit[/bold] để thoát[/dim]",
         box=box.ROUNDED,
         border_style="cyan",

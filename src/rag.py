@@ -15,6 +15,7 @@ Sử dụng:
 
 import os
 import re
+import sys
 from pathlib import Path
 
 import httpx
@@ -158,8 +159,8 @@ class KnowledgeBase:
             if p.is_file() and p.suffix.lower() in extensions:
                 try:
                     total += self.add_file(str(p))
-                except Exception:
-                    pass  # bỏ qua file lỗi encoding/binary
+                except Exception as e:
+                    print(f"[rag] skip {p.name}: {e}", file=sys.stderr)
         return total
 
     # ── Tìm kiếm ─────────────────────────────────────────────────────────────
