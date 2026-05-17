@@ -14,6 +14,9 @@ __pycache__/
 # Sessions (chat history — dữ liệu cá nhân)
 sessions/
 
+# RAG / ChromaDB (vector store — tái tạo được bằng re-index)
+data/
+
 # OS
 .DS_Store
 Thumbs.db
