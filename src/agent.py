@@ -160,7 +160,7 @@ def _execute(name: str, args: dict, kb: KnowledgeBase | None) -> str:
     if name == "search_kb":
         if kb is None:
             return "Knowledge base chưa được load. Dùng --kb khi khởi động."
-        results = kb.search(args["query"], k=args.get("k", 5))
+        results = kb.search(args.get("query", ""), k=args.get("k", 5))
         if not results:
             return "Không tìm thấy kết quả liên quan."
         return "\n\n".join(
