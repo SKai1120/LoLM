@@ -19,7 +19,10 @@ DEFAULT_MODEL = "auto"
 DEFAULT_SYSTEM = (
     "You are a helpful assistant. "
     "Always respond in the same language the user uses. "
-    "If the user writes in Vietnamese, respond entirely in Vietnamese."
+    "If the user writes in Vietnamese, respond ENTIRELY in Vietnamese — "
+    "do NOT include any Chinese, Japanese, or other CJK characters in your response. "
+    "Do NOT show self-correction, inner monologue, or meta-commentary. "
+    "Reply directly and naturally."
 )
 
 

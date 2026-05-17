@@ -179,13 +179,82 @@ cd H:\Project\LoLM
 - `src/chat.py` — interactive CLI với lệnh `/help /model /history /save /reset /exit`
 
 **Bỏ ngỏ — tiếp tục lần sau:**
-- [ ] Test `src/chat.py` interactive CLI
-- [ ] Phase 4: Spinner khi chờ token đầu tiên
-- [ ] Phase 4: Live panel — text render trong khung cố định
-- [ ] Phase 4: Strip `<think>` tag của deepseek-r1
+- [x] Test `src/chat.py` interactive CLI
+- [x] Phase 4: Spinner khi chờ token đầu tiên — custom flower animation
+- [x] Phase 4: TUI (Textual) — `src/tui.py` thay thế live panel, đầy đủ layout + keybinding
+- [x] Phase 4: Strip `<think>` tag của deepseek-r1 — spinner giữ nguyên xuyên suốt block think
 - [ ] Phase 5: RAG / Chatbot
 
 ---
+
+---
+
+### [2026-05-17] Phase 5a — RAG pipeline
+
+**Kiến trúc:**
+```
+[file / url / repo] → loader → chunker → embed (nomic-embed-text) → ChromaDB
+                                                                          ↓
+[câu hỏi] → embed → search top-k → build_prompt → LLM → trả lời
+```
+
+**Đã xây:**
+- `src/rag.py` — `KnowledgeBase` class:
+  - `add_file(path)` — txt, md, py, pdf (cần pypdf)
+  - `add_url(url)` — fetch + strip HTML
+  - `add_repo(path)` — index toàn bộ repo, skip .git/node_modules/...
+  - `search(query, k)` — cosine similarity search
+  - `build_prompt(query, k)` — inject context vào prompt
+- `scripts/rag_chat.py` — CLI test: `--file / --url / --repo / --kb`
+- Embedding model: `nomic-embed-text` via Ollama
+- Vector store: ChromaDB persistent tại `data/chroma/`
+
+**Deps mới:** `chromadb>=0.5.0`, `pypdf>=4.0.0`
+
+**Phase 5b — RAG tích hợp vào TUI:**
+- [x] `--kb <name>` flag khi khởi động TUI để load KB
+- [x] Auto RAG augment mỗi prompt khi KB active
+- [x] `/index <file|URL|--repo path>` — index on-the-fly trong TUI
+- [x] `/kb` — xem trạng thái KB
+- [x] Citation `📚 nguồn` hiện sau mỗi câu trả lời RAG
+
+---
+
+### [2026-05-17] Fix — System prompt ngăn trộn tiếng Trung
+
+**Vấn đề:** qwen2.5:14b đôi khi tự "sửa bài" bằng tiếng Trung giữa response (`正确的回答应该是：`) khi prompt dài.
+
+**Fix:** Tăng cường `DEFAULT_SYSTEM` trong `src/client.py` — cấm rõ ký tự CJK, cấm inner monologue và meta-commentary.
+
+**Kết quả:** Giảm đáng kể hiện tượng trộn ngôn ngữ, còn sót nhẹ ở một số trường hợp edge case.
+
+---
+
+### [2026-05-17] Phase 5c — Agent với Tool Calling
+
+**Kiến trúc:**
+```
+User → Agent.run() → ollama.chat(tools=...) → tool_calls?
+                          ↓ yes                      ↓ no
+                    execute tool              yield final text
+                          ↓
+                    append result → loop lại
+```
+
+**Tools:**
+- `read_file(path)` — đọc file local (limit 10k chars)
+- `list_dir(path)` — liệt kê thư mục
+- `fetch_url(url)` — fetch + strip HTML web page
+- `search_kb(query, k)` — tìm trong ChromaDB
+- `git_log(path, n)` — xem git history
+
+**Tích hợp TUI:**
+- `--agent` flag khi khởi động → bật ngay
+- `/agent` command trong chat → toggle on/off
+- Hiện tool status (`🔧 tool_name args`) trong lúc agent đang chạy
+- Max 8 vòng tool call per turn
+
+**File mới:** `src/agent.py`
 
 <!-- Thêm entries mới vào đây theo format: -->
 <!-- ### [YYYY-MM-DD] Tiêu đề -->

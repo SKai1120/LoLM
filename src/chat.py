@@ -18,16 +18,38 @@ Lệnh trong chat:
 
 import sys
 import os
+import re
 import typer
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 from rich.live import Live
-from rich.spinner import Spinner
+from rich.spinner import Spinner, SPINNERS
 from rich import box
+
+SPINNERS["robot_asm"] = {
+    "interval": 180,
+    "frames": [
+        "·  ·  ·  ·  ·",
+        "✿  ·  ·  ·  ·",
+        "✿  ❀  ·  ·  ·",
+        "✿  ❀  ❁  ·  ·",
+        "✿  ❀  ❁  ✾  ·",
+        "✿  ❀  ❁  ✾  ❋",
+        "·  ❀  ❁  ✾  ❋",
+        "·  ·  ❁  ✾  ❋",
+        "·  ·  ·  ✾  ❋",
+        "·  ·  ·  ·  ❋",
+    ],
+}
 
 from src.client import ChatSession, DEFAULT_MODEL, DEFAULT_SYSTEM
 from src.router import MODEL_FAST, MODEL_REASONING, select_model
+
+_THINK_RE = re.compile(r"<think>.*?</think>\s*", re.DOTALL | re.IGNORECASE)
+
+def _strip_think(text: str) -> str:
+    return _THINK_RE.sub("", text)
 
 app     = typer.Typer(add_completion=False)
 console = Console()
@@ -67,20 +89,38 @@ def _show_model_info(session: ChatSession) -> None:
 
 def _stream_reply(session: ChatSession, prompt: str) -> str:
     """Stream câu trả lời ra terminal, trả về tên model đã dùng."""
-    # Xác định model trước để hiển thị
     resolved = select_model(prompt) if session.model == "auto" else session.model
     icon     = "🧠" if resolved == MODEL_REASONING else "⚡"
     color    = "green" if resolved == MODEL_REASONING else "yellow"
 
     console.print(f"\n[{color}]{icon} {resolved}[/{color}]", end="  ")
 
-    full = []
+    live       = Live(Spinner("robot_asm", style="cyan"), console=console, transient=True)
+    live.start()
+    accumulated = []
+    think_done  = False
+
     try:
         for chunk in session.stream(prompt):
-            console.print(chunk, end="", highlight=False)
-            full.append(chunk)
+            accumulated.append(chunk)
+            full     = "".join(accumulated)
+            in_think = "<think>" in full and "</think>" not in full
+
+            if not think_done:
+                if in_think:
+                    continue  # spinner chạy trong lúc model đang <think>
+                # <think> xong (hoặc không có) — tắt spinner, in toàn bộ text sạch
+                live.stop()
+                think_done = True
+                console.print(_strip_think(full), end="", highlight=False)
+            else:
+                console.print(chunk, end="", highlight=False)
+
     except KeyboardInterrupt:
         console.print("\n[dim](dừng stream)[/dim]")
+    finally:
+        if not think_done:
+            live.stop()
 
     console.print("\n")
     return resolved
