@@ -30,7 +30,7 @@ from textual.worker import get_current_worker
 
 from src.client import ChatSession
 from src.router import MODEL_REASONING, select_model
-from src.rag import KnowledgeBase
+from src.rag import KnowledgeBase, list_kbs
 from src.agent import Agent, ToolEvent
 
 _FLOWER_FRAMES = [
@@ -178,10 +178,69 @@ class LoLMApp(App):
             else:
                 self._do_index(arg)
         elif cmd == "/kb":
-            if self.kb:
-                log.write(f"[dim]KB [green]{self.kb.name}[/green]  {self.kb.count()} chunks[/dim]")
+            parts = raw.split(maxsplit=2)
+            sub   = parts[1].lower() if len(parts) > 1 else ""
+            arg   = parts[2]         if len(parts) > 2 else ""
+
+            if not sub:
+                if self.kb:
+                    log.write(f"[dim]KB [green]{self.kb.name}[/green]  {self.kb.count()} chunks[/dim]")
+                else:
+                    log.write("[dim]Chưa load KB — dùng /kb new <name> hoặc /kb switch <name>[/dim]")
+
+            elif sub == "list":
+                names = list_kbs()
+                if not names:
+                    log.write("[dim]Chưa có KB nào.[/dim]")
+                else:
+                    current = self.kb.name if self.kb else None
+                    for n in names:
+                        marker = " [green]←[/green]" if n == current else ""
+                        log.write(f"  [dim]• {n}{marker}[/dim]")
+
+            elif sub == "new":
+                if not arg:
+                    log.write("[dim red]/kb new cần tên: /kb new <name>[/dim red]")
+                else:
+                    self.kb = KnowledgeBase(arg)
+                    if self.agent:
+                        self.agent.kb = self.kb
+                    log.write(f"[dim green]✓ Tạo KB [bold]{arg}[/bold] ({self.kb.count()} chunks)[/dim green]")
+
+            elif sub == "switch":
+                if not arg:
+                    log.write("[dim red]/kb switch cần tên: /kb switch <name>[/dim red]")
+                elif arg not in list_kbs():
+                    log.write(f"[dim red]KB '{arg}' không tồn tại. Dùng /kb list để xem.[/dim red]")
+                else:
+                    self.kb = KnowledgeBase(arg)
+                    if self.agent:
+                        self.agent.kb = self.kb
+                    log.write(f"[dim green]✓ Switched sang KB [bold]{arg}[/bold] ({self.kb.count()} chunks)[/dim green]")
+
+            elif sub == "rename":
+                if not self.kb:
+                    log.write("[dim red]Chưa load KB nào.[/dim red]")
+                elif not arg:
+                    log.write("[dim red]/kb rename cần tên mới: /kb rename <name>[/dim red]")
+                else:
+                    old = self.kb.name
+                    self.kb.rename(arg)
+                    log.write(f"[dim green]✓ Đổi tên [bold]{old}[/bold] → [bold]{arg}[/bold][/dim green]")
+
+            elif sub == "delete":
+                if not self.kb:
+                    log.write("[dim red]Chưa load KB nào.[/dim red]")
+                else:
+                    name = self.kb.name
+                    self.kb.drop()
+                    self.kb = None
+                    if self.agent:
+                        self.agent.kb = None
+                    log.write(f"[dim green]✓ Đã xóa KB [bold]{name}[/bold][/dim green]")
+
             else:
-                log.write("[dim]Chưa load KB — dùng --kb khi khởi động hoặc /index để thêm.[/dim]")
+                log.write(f"[dim red]Lệnh không hợp lệ. Dùng: /kb list | new | switch | rename | delete[/dim red]")
         elif cmd in ("/exit", "/quit", "/q"):
             self.action_quit()
         else:
@@ -354,10 +413,15 @@ class LoLMApp(App):
 
     def action_help(self) -> None:
         self.query_one("#log", RichLog).write(
-            "[dim]Lệnh: /help /model /history /save /reset /exit\n"
-            "       /agent  — bật/tắt agent mode (LLM tự dùng tools)\n"
-            "       /kb     — xem trạng thái knowledge base\n"
+            "[dim]Lệnh chat: /help /model /history /save /reset /exit\n"
+            "       /agent  — bật/tắt agent mode\n"
             "       /index <file|URL|--repo path>  — thêm tài liệu vào KB\n"
+            "KB:    /kb              — xem KB hiện tại\n"
+            "       /kb list         — liệt kê tất cả KB\n"
+            "       /kb new <name>   — tạo và switch sang KB mới\n"
+            "       /kb switch <name>— switch sang KB đã có\n"
+            "       /kb rename <name>— đổi tên KB hiện tại\n"
+            "       /kb delete       — xóa KB hiện tại\n"
             "Phím:  F1=help  Ctrl+S=lưu  Ctrl+R=reset  Ctrl+Q=thoát[/dim]"
         )
 

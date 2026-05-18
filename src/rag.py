@@ -224,12 +224,30 @@ class KnowledgeBase:
         return self._col.count()
 
     def clear(self) -> None:
-        """Xóa toàn bộ dữ liệu trong collection."""
+        """Xóa toàn bộ dữ liệu, giữ collection rỗng."""
         self._client.delete_collection(self.name)
         self._col = self._client.get_or_create_collection(
             name=self.name,
             metadata={"hnsw:space": "cosine"},
         )
 
+    def drop(self) -> None:
+        """Xóa hoàn toàn collection khỏi ChromaDB."""
+        self._client.delete_collection(self.name)
+
+    def rename(self, new_name: str) -> None:
+        """Đổi tên collection."""
+        self._col.modify(name=new_name)
+        self.name = new_name
+
     def __repr__(self) -> str:
         return f"KnowledgeBase(name={self.name!r}, chunks={self.count()})"
+
+
+def list_kbs(data_dir: str = DATA_DIR) -> list[str]:
+    """Liệt kê tên tất cả KB đang có trong data_dir."""
+    if not os.path.exists(data_dir):
+        return []
+    import chromadb
+    client = chromadb.PersistentClient(path=data_dir)
+    return sorted(c.name for c in client.list_collections())
