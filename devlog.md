@@ -264,5 +264,19 @@ User → Agent.run() → ollama.chat(tools=...) → tool_calls?
 
 **Chạy:** `python -m src.tui` (thay cho `python -m src.chat`)
 
+### [2026-05-18] Phase 5b — KB management trong TUI
+
+**Lệnh mới:**
+- `/kb` — xem KB đang active (tên + số chunks)
+- `/kb list` — liệt kê tất cả KB, đánh dấu cái đang dùng bằng `←`
+- `/kb new <name>` — tạo KB mới và switch sang ngay
+- `/kb switch <name>` — switch sang KB đã tồn tại (validate trước)
+- `/kb rename <name>` — đổi tên KB đang active
+- `/kb delete` — xóa KB đang active, reset về trạng thái không có KB
+
+**Thay đổi:**
+- `src/rag.py`: thêm `drop()`, `rename()`, `list_kbs()` module function
+- `src/tui.py`: expand `/kb` handler + import `list_kbs` + update `/help`
+
 <!-- Thêm entries mới vào đây theo format: -->
 <!-- ### [YYYY-MM-DD] Tiêu đề -->
