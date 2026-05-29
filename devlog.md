@@ -278,5 +278,43 @@ User → Agent.run() → ollama.chat(tools=...) → tool_calls?
 - `src/rag.py`: thêm `drop()`, `rename()`, `list_kbs()` module function
 - `src/tui.py`: expand `/kb` handler + import `list_kbs` + update `/help`
 
+### [2026-05-29] Phase 6 — Multi-Agent System (CrewAI + Telegram + Tailscale)
+
+**Kiến trúc mới:**
+```
+[Telegram / TUI /crew]
+       ↓
+  AgentCrew.run(task)
+       ↓
+  ManagerAgent (Claude API, claude-sonnet-4-6)  ← lập kế hoạch + tổng hợp
+       ↓ subtasks
+  ExecutorAgent (Qwen local, qwen2.5:14b)       ← tool calling
+       ↓ results
+  data/logs/daily_YYYY-MM-DD.md                 ← auto logging
+```
+
+**Files mới:**
+- `src/crew/__init__.py` — module init
+- `src/crew/tools.py` — 6 CrewAI tool wrappers (reuse _execute từ agent.py)
+- `src/crew/agents.py` — ManagerAgent (Claude) + ExecutorAgent (Qwen)
+- `src/crew/tasks.py` — 3 task templates: plan / execute / synthesize
+- `src/crew/crew.py` — AgentCrew orchestrator, auto daily logging
+- `src/telegram_bot.py` — Telegram bot: /ask /status /reset /brief
+- `scripts/start_bot.py` — Bot entry point
+- `scripts/morning_briefing.py` — Heartbeat 7:00 AM
+
+**Files sửa:**
+- `src/router.py` — thêm `select_backend()` cho cloud/local routing
+- `src/tui.py` — thêm `/crew` command, `_do_crew()` worker
+- `requirements.txt` — thêm crewai, crewai-tools, anthropic, python-telegram-bot, psutil
+- `.env.example` — tạo template biến môi trường
+
+**Docs mới:**
+- `docs/multi_agent.md` — hướng dẫn dùng multi-agent system
+- `docs/remote_access.md` — Tailscale setup guide
+
+**Remote access:** Tailscale VPN mesh (SSH over Tailscale) + Telegram long polling
+**Automation:** Windows Task Scheduler chạy morning_briefing.py lúc 7:00 AM
+
 <!-- Thêm entries mới vào đây theo format: -->
 <!-- ### [YYYY-MM-DD] Tiêu đề -->

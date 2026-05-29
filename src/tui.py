@@ -32,6 +32,7 @@ from src.client import ChatSession
 from src.router import MODEL_REASONING, select_model
 from src.rag import KnowledgeBase, list_kbs
 from src.agent import Agent, ToolEvent
+from src.crew.crew import AgentCrew, CrewEvent
 
 _FLOWER_FRAMES = [
     "·  ·  ·  ·  ·",
@@ -94,6 +95,7 @@ class LoLMApp(App):
         self.session_file = session_file
         self.kb           = kb
         self.agent        = agent        # None = chat thường, có = agent mode
+        self._crew: AgentCrew | None = None  # AgentCrew mode (Manager+Executor)
         self._busy        = False
         self._flower_idx  = 0
         self._flower_timer = None
@@ -114,7 +116,8 @@ class LoLMApp(App):
         kb_label    = (f"  •  KB [green]{self.kb.name}[/green] "
                        f"[dim]({self.kb.count()} chunks)[/dim]") if self.kb else ""
         agent_label = "  •  [magenta]agent mode[/magenta]" if self.agent else ""
-        log.write(f"[bold cyan]LoLM Chat[/bold cyan]  •  model {model_label}{kb_label}{agent_label}")
+        crew_label  = "  •  [blue]crew mode[/blue]" if self._crew else ""
+        log.write(f"[bold cyan]LoLM Chat[/bold cyan]  •  model {model_label}{kb_label}{agent_label}{crew_label}")
         if self.session_file and self.session.turn_count:
             log.write(f"[dim]📂 {self.session_file}  ({self.session.turn_count} turns)[/dim]")
         log.write("[dim]F1 help  •  Ctrl+S lưu  •  Ctrl+R reset  •  Ctrl+Q thoát[/dim]\n")
@@ -132,7 +135,9 @@ class LoLMApp(App):
         else:
             log = self.query_one("#log", RichLog)
             log.write(f"[cyan bold]Bạn:[/cyan bold] {escape(text)}\n")
-            if self.agent:
+            if self._crew:
+                self._do_crew(text)
+            elif self.agent:
                 self._do_agent(text)
             elif self.kb and self.kb.count() > 0:
                 rag_prompt = self.kb.build_prompt(text)
@@ -169,8 +174,17 @@ class LoLMApp(App):
                 self.agent = None
                 log.write("[dim]Agent mode [red]tắt[/red] — dùng chat thường.[/dim]")
             else:
+                self._crew = None   # tắt crew nếu đang bật
                 self.agent = Agent(model=self.session.model, kb=self.kb)
                 log.write("[dim]Agent mode [magenta]bật[/magenta] — LLM có thể dùng tools.[/dim]")
+        elif cmd == "/crew":
+            if self._crew:
+                self._crew = None
+                log.write("[dim]Crew mode [red]tắt[/red] — dùng chat thường.[/dim]")
+            else:
+                self.agent = None   # tắt agent nếu đang bật
+                self._crew = AgentCrew(kb=self.kb)
+                log.write("[dim]Crew mode [blue]bật[/blue] — Manager (Claude) + Executor (Qwen).[/dim]")
         elif cmd == "/index":
             arg = raw.split(maxsplit=1)[1] if len(raw.split()) > 1 else ""
             if not arg:
@@ -318,6 +332,32 @@ class LoLMApp(App):
         self._busy = False
 
     @work(thread=True)
+    def _do_crew(self, prompt: str) -> None:
+        """AgentCrew loop — Manager lập kế hoạch, Executor chạy tools, Manager tổng hợp."""
+        self._busy = True
+        label      = "[blue]🤝 crew[/blue]"
+        log        = self.query_one("#log", RichLog)
+        final_text = ""
+
+        self.call_from_thread(self._start_spinner, label)
+
+        for item in self._crew.run(prompt):
+            if isinstance(item, CrewEvent):
+                status = f"[blue]{item.phase}[/blue]  [dim]{item.message[:60]}[/dim]"
+                self.call_from_thread(self.query_one("#status", Static).update, status)
+            else:
+                # str = câu trả lời cuối
+                self.call_from_thread(self._stop_spinner)
+                final_text = item
+                self.call_from_thread(self._show_stream, label, final_text)
+
+        if not final_text:
+            self.call_from_thread(self._stop_spinner)
+
+        self.call_from_thread(self._finish_stream, label, final_text, [])
+        self._busy = False
+
+    @work(thread=True)
     def _do_stream(self, prompt: str, sources: list[str] | None = None) -> None:
         worker    = get_current_worker()
         self._busy = True
@@ -414,7 +454,8 @@ class LoLMApp(App):
     def action_help(self) -> None:
         self.query_one("#log", RichLog).write(
             "[dim]Lệnh chat: /help /model /history /save /reset /exit\n"
-            "       /agent  — bật/tắt agent mode\n"
+            "       /agent  — bật/tắt agent mode (Qwen + tools)\n"
+            "       /crew   — bật/tắt crew mode (Manager Claude + Executor Qwen)\n"
             "       /index <file|URL|--repo path>  — thêm tài liệu vào KB\n"
             "KB:    /kb              — xem KB hiện tại\n"
             "       /kb list         — liệt kê tất cả KB\n"
@@ -437,6 +478,8 @@ class LoLMApp(App):
         self.session.reset()
         if self.agent:
             self.agent.reset()
+        if self._crew:
+            self._crew = AgentCrew(kb=self.kb)  # tạo lại crew mới
         self.query_one("#log", RichLog).write("[dim]✓ Đã xóa lịch sử.[/dim]")
 
     def action_quit(self) -> None:
