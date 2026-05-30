@@ -94,3 +94,32 @@ def select_model(prompt: str, verbose: bool = False) -> str:
         c.print(t)
 
     return chosen
+
+
+# ── Cloud vs Local routing ─────────────────────────────────────────────────────
+
+MODEL_CLOUD = "claude-sonnet-4-6"
+
+# Từ khóa gợi ý task cần cloud (chiến lược, tổng hợp, thiết kế cấp cao)
+_CLOUD_KEYWORDS = [
+    "thiết kế hệ thống", "kiến trúc hệ thống", "architecture", "system design",
+    "lập kế hoạch chiến lược", "roadmap", "strategy",
+    "phân tích toàn diện", "tổng hợp", "synthesis",
+    "so sánh nhiều phương án", "đánh giá tổng thể",
+    "viết báo cáo", "report", "tư vấn", "consultation",
+    "thiết kế database", "thiết kế api", "thiết kế microservice",
+]
+
+
+def select_backend(prompt: str) -> tuple[str, str]:
+    """
+    Phân tích prompt và quyết định dùng cloud hay local.
+
+    Returns:
+        ("cloud", "claude-sonnet-4-6")  — task chiến lược / phức tạp
+        ("local", model_name)           — task thường ngày
+    """
+    cloud_hits = _count_keyword_hits(prompt, _CLOUD_KEYWORDS)
+    if cloud_hits >= 1 or len(prompt) > 500:
+        return ("cloud", MODEL_CLOUD)
+    return ("local", select_model(prompt))
